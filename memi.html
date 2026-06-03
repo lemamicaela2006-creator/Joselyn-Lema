@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cálculo de Área y Perímetro Mojado</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+            font-size: 1.8em;
+            font-weight: bold;
+        }
+        .meta-data {
+            text-align: center;
+            color: #566573;
+            font-size: 1.05em;
+            margin-bottom: 25px;
+            font-weight: 500;
+        }
+        .control-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            background: #ebf5fb;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #a9ccee;
+            margin-bottom: 25px;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .control-group label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #2c3e50;
+        }
+        .control-group input {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1em;
+        }
+        .layout {
+            display: grid;
+            grid-template-columns: 1.1fr 1fr;
+            gap: 25px;
+        }
+        @media (max-width: 950px) {
+            .layout { grid-template-columns: 1fr; }
+        }
+        .panel-canvas {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #fafafa;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        canvas {
+            background: #ffffff;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+        }
+        .panel-resultados {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 20px;
+            padding: 10px;
+        }
+        .card-resultado {
+            padding: 25px;
+            border-radius: 8px;
+            font-size: 1.3em;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border-left: 6px solid;
+        }
+        .area-card {
+            background: #e8f8f5;
+            border-left-color: #1abc9c;
+            color: #117a65;
+        }
+        .perimetro-card {
+            background: #fbeee6;
+            border-left-color: #e67e22;
+            color: #a04000;
+        }
+        .valor-grande {
+            font-size: 1.6em;
+            display: block;
+            margin-top: 5px;
+            font-family: monospace;
+        }
+        .error-msg {
+            background: #fadbd8;
+            border-left: 6px solid #c0392b;
+            color: #78281f;
+            padding: 20px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>CÁLCULO DE ÁREA Y PERÍMETRO MOJADO</h1>
+    <div class="meta-data">
+        Universidad Técnica de Ambato - Estudiante: Lema Espinoza Joselyn Micaela
+    </div>
+    
+    <div class="control-panel">
+        <div class="control-group">
+            <label for="inputBase">Base Central (b):</label>
+            <input type="number" id="inputBase" value="1.20" step="0.01" min="0.1">
+        </div>
+        <div class="control-group">
+            <label for="inputAltura">Altura Total (y):</label>
+            <input type="number" id="inputAltura" value="1.10" step="0.01" min="0.1">
+        </div>
+        <div class="control-group">
+            <label for="inputTalud">Talud Izquierdo (z):</label>
+            <input type="number" id="inputTalud" value="0.8" step="0.01" min="0">
+        </div>
+        <div class="control-group">
+            <label for="inputDiametro">Diámetro Curva (D):</label>
+            <input type="number" id="inputDiametro" value="1.50" step="0.01" min="0.1">
+        </div>
+    </div>
+
+    <div class="layout">
+        <div class="panel-canvas">
+            <h3 style="margin-top:0; color:#34495e;">Visualización Geométrica</h3>
+            <canvas id="canalCanvas" width="540" height="540"></canvas>
+        </div>
+
+        <div id="resultadosPanel" class="panel-resultados">
+            </div>
+    </div>
+</div>
+
+<script>
+    const inputBase = document.getElementById('inputBase');
+    const inputAltura = document.getElementById('inputAltura');
+    const inputTalud = document.getElementById('inputTalud');
+    const inputDiametro = document.getElementById('inputDiametro');
+    
+    const canvas = document.getElementById('canalCanvas');
+    const ctx = canvas.getContext('2d');
+
+    inputBase.addEventListener('input', calcularTodo);
+    inputAltura.addEventListener('input', calcularTodo);
+    inputTalud.addEventListener('input', calcularTodo);
+    inputDiametro.addEventListener('input', calcularTodo);
+
+    calcularTodo();
+
+    function calcularTodo() {
+        // Captura de datos
+        const baseCentral = parseFloat(inputBase.value) || 0;
+        const alturaTotal = parseFloat(inputAltura.value) || 0;
+        const taludIzq = parseFloat(inputTalud.value) || 0;
+        const diametroCurva = parseFloat(inputDiametro.value) || 0;
+        const radio = diametroCurva / 2;
+
+        // Control de límites geométricos
+        if (alturaTotal > diametroCurva) {
+            document.getElementById('resultadosPanel').innerHTML = `
+                <div class="error-msg">
+                    ¡INCONSISTENCIA GEOMÉTRICA!<br>
+                    La altura total (y = ${alturaTotal}m) no puede superar al diámetro de la curva (D = ${diametroCurva}m).
+                </div>`;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            return;
+        }
+
+        // ==========================================
+        // PROCESAMIENTO MATEMÁTICO DIRECTO
+        // ==========================================
+        
+        // Área 1 (Triángulo Izquierdo)
+        const b1 = alturaTotal * taludIzq; 
+        const A1 = (b1 * alturaTotal) / 2; 
+
+        // Área 2 (Rectángulo Central)
+        const A2 = baseCentral * alturaTotal; 
+
+        // Geometría y áreas asociadas al bloque derecho de la curva
+        const h4 = Math.abs(alturaTotal - radio);
+        let b4 = Math.pow(radio, 2) - Math.pow(h4, 2);
+        b4 = b4 > 0 ? Math.sqrt(b4) : 0;
+        const A4 = (b4 * h4) / 2; 
+
+        const alphaRad = Math.acos(h4 / radio); 
+        const thetaDeg = 90.0 - (alphaRad * (180 / Math.PI)); 
+        const thetaRad = thetaDeg * (Math.PI / 180); 
+
+        // Área 3 (Sector Circular Superior) y Área 5 (Cuadrante Inferior Derecho)
+        const A3 = 0.5 * Math.pow(radio, 2) * thetaRad; 
+        const A5 = (Math.PI * Math.pow(radio, 2)) / 4; 
+
+        // Cálculo Final del Área Total
+        const AT = A1 + A2 + A3 + A4 + A5; 
+
+        // Cálculo Final del Perímetro Mojado
+        const l1 = Math.sqrt(Math.pow(b1, 2) + Math.pow(alturaTotal, 2)); 
+        const anguloArcoTotal = 90.0 + thetaDeg; 
+        const l2 = (Math.PI * diametroCurva * anguloArcoTotal) / 360.0; 
+
+        const Pmojado = l1 + l2 + baseCentral; 
+
+        // ==========================================
+        // MOSTRAR EXCLUSIVAMENTE LOS RESULTADOS TOTALES
+        // ==========================================
+        document.getElementById('resultadosPanel').innerHTML = `
+            <div class="card-resultado area-card">
+                ÁREA TOTAL (AT)
+                <span class="valor-grande">${AT.toFixed(3)} m²</span>
+            </div>
+            <div class="card-resultado perimetro-card">
+                PERÍMETRO MOJADO TOTAL (P)
+                <span class="valor-grande">${Pmojado.toFixed(3)} m</span>
+            </div>
+        `;
+
+        // ==========================================
+        // RENDERIZADO DEL GRÁFICO (IGUAL AL CUADERNO)
+        // ==========================================
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        const escala = 150; 
+        const offsetX = 60 + (b1 * escala);
+        const offsetY = 220;
+
+        function tX(x) { return offsetX + x * escala; }
+        function tY(y) { return offsetY - y * escala; }
+
+        const centroX = baseCentral;
+        const centroY = radio;
+
+        // --- SECCIÓN MOJADA (AGUA) ---
+        ctx.fillStyle = "rgba(52, 152, 219, 0.25)";
+        ctx.beginPath();
+        ctx.moveTo(tX(-b1), tY(alturaTotal)); 
+        ctx.lineTo(tX(0), tY(0));             
+        ctx.lineTo(tX(baseCentral), tY(0));   
+        
+        let anguloInicio = 0.5 * Math.PI; 
+        let anguloFin = anguloInicio - (anguloArcoTotal * Math.PI / 180);
+        
+        ctx.arc(tX(centroX), tY(centroY), radio * escala, anguloInicio, anguloFin, true);
+        ctx.lineTo(tX(-b1), tY(alturaTotal)); 
+        ctx.fill();
+
+        // Contorno del Perímetro Mojado
+        ctx.strokeStyle = "#1f618d";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(tX(-b1), tY(alturaTotal));
+        ctx.lineTo(tX(0), tY(0));
+        ctx.lineTo(tX(baseCentral), tY(0));
+        ctx.arc(tX(centroX), tY(centroY), radio * escala, anguloInicio, anguloFin, true);
+        ctx.stroke();
+
+        // Espejo de agua libre (Línea discontinua)
+        ctx.strokeStyle = "#7f8c8d";
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(tX(-b1), tY(alturaTotal));
+        ctx.lineTo(tX(centroX + radio * Math.cos(anguloFin)), tY(centroY + radio * Math.sin(anguloFin)));
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Cotas indicativas
+        ctx.fillStyle = "#2c3e50";
+        ctx.font = "bold 11px sans-serif";
+        ctx.fillText("l1 = " + l1.toFixed(2) + "m", tX(-b1/2) - 45, tY(alturaTotal/2));
+        ctx.fillText(baseCentral.toFixed(2) + "m", tX(baseCentral/2) - 15, tY(-0.15));
+        ctx.fillText("l2 = " + l2.toFixed(2) + "m", tX(centroX + radio * Math.cos(anguloFin)) + 15, tY(alturaTotal/2));
+
+        // --- SUBSECCIONES (DIVISORES INTERNOS DEL CUADERNO) ---
+        const despY = -1.7; 
+        ctx.strokeStyle = "#000";
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(tX(-b1), tY(alturaTotal + despY));
+        ctx.lineTo(tX(0), tY(0 + despY));
+        ctx.lineTo(tX(baseCentral), tY(0 + despY));
+        ctx.arc(tX(centroX), tY(centroY + despY), radio * escala, anguloInicio, anguloFin, true);
+        ctx.stroke();
+
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([3, 3]);
+        ctx.strokeStyle = "#e74c3c";
+        ctx.beginPath(); ctx.moveTo(tX(0), tY(0 + despY)); ctx.lineTo(tX(0), tY(alturaTotal + despY)); ctx.stroke();
+        ctx.strokeStyle = "#2980b9";
+        ctx.beginPath(); ctx.moveTo(tX(baseCentral), tY(0 + despY)); ctx.lineTo(tX(baseCentral), tY(alturaTotal + despY)); ctx.stroke();
+        ctx.strokeStyle = "#9b59b6";
+        ctx.beginPath(); ctx.moveTo(tX(centroX), tY(centroY + despY)); ctx.lineTo(tX(centroX + radio), tY(centroY + despY)); ctx.stroke();
+        ctx.strokeStyle = "#27ae60";
+        ctx.beginPath(); ctx.moveTo(tX(centroX), tY(centroY + despY)); ctx.lineTo(tX(centroX + radio * Math.cos(anguloFin)), tY(centroY + radio * Math.sin(anguloFin) + despY)); ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.font = "bold 13px sans-serif";
+        ctx.fillStyle = "#c0392b"; ctx.fillText("A1", tX(-b1/2) - 8, tY(alturaTotal/3 + despY));
+        ctx.fillStyle = "#2980b9"; ctx.fillText("A2", tX(baseCentral/2) - 8, tY(alturaTotal/2 + despY));
+        ctx.fillStyle = "#27ae60"; ctx.fillText("A3", tX(centroX + radio/3), tY(centroY + radio/1.7 + despY));
+        ctx.fillStyle = "#e67e22"; ctx.fillText("A4", tX(centroX + radio/1.4), tY(centroY + h4/2 + despY));
+        ctx.fillStyle = "#8e44ad"; ctx.fillText("A5", tX(centroX + radio/2.2), tY(centroY - radio/2.2 + despY));
+    }
+</script>
+
+</body>
+</html>
